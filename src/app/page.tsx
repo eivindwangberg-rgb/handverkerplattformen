@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import SiteBuilder, { SiteData, colorTemplates, FALLBACK_IMAGE } from "./components/SiteBuilder";
+import Portal, { demoMessages } from "./components/Portal";
+import PortalButton from "./components/PortalButton";
 
 const emptyData: SiteData = {
   bedriftsnavn: "",
@@ -39,6 +41,10 @@ export default function Home() {
     setHasSubmitted(true);
   };
 
+  const [portalOpen, setPortalOpen] = useState(false);
+  const [messages, setMessages] = useState(demoMessages);
+  const unreadCount = messages.filter((m) => !m.readAt).length;
+
   const [kontaktNavn, setKontaktNavn] = useState("");
   const [kontaktTlf, setKontaktTlf] = useState("");
   const [kontaktMelding, setKontaktMelding] = useState("");
@@ -64,6 +70,15 @@ export default function Home() {
         onSubmit={handleSubmit}
         initialData={data}
         mode={hasSubmitted ? "full" : "wizard"}
+      />
+      <Portal
+        isOpen={portalOpen}
+        onClose={() => setPortalOpen(false)}
+        onEditSite={() => setBuilderOpen(true)}
+        gradientClass={gClass("br")}
+        gradientStyle={gStyle("br")}
+        messages={messages}
+        onMessagesChange={setMessages}
       />
 
       {!hasSubmitted && !builderOpen ? (
@@ -95,16 +110,11 @@ export default function Home() {
                 <a href="#kontakt" className="hidden text-sm font-medium text-white/80 transition hover:text-white md:block">Kontakt</a>
                 <a
                   href={safeTelefon ? `tel:+47${safeTelefon}` : "#"}
-                  className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-100"
+                  className="rounded-lg bg-white px-5 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-100"
                 >
                   {data.telefon}
                 </a>
-                <button
-                  onClick={() => setBuilderOpen(true)}
-                  className="rounded-full border border-white/30 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/10"
-                >
-                  Rediger
-                </button>
+                <PortalButton unreadCount={unreadCount} onClick={() => setPortalOpen(true)} />
               </nav>
             </div>
           </header>
