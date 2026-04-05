@@ -510,7 +510,10 @@ export default function SiteBuilder({
   if (mode === "wizard") {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 py-8 backdrop-blur-sm">
-        <div className="mx-4 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl md:p-8">
+        <form
+          className="mx-4 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl md:p-8"
+          onSubmit={(e) => { e.preventDefault(); if (currentStep.valid && !loading) handleWizardNext(); }}
+        >
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-lg">🤖</div>
@@ -519,7 +522,7 @@ export default function SiteBuilder({
                 <p className="text-xs text-gray-500">Steg {step + 1} av {wizardSteps.length}</p>
               </div>
             </div>
-            <button onClick={onClose} className="text-gray-400 transition hover:text-gray-600">✕</button>
+            <button type="button" onClick={onClose} className="text-gray-400 transition hover:text-gray-600">✕</button>
           </div>
 
           <div className="mb-2 h-1 w-full rounded-full bg-gray-100">
@@ -531,31 +534,34 @@ export default function SiteBuilder({
 
           <div className="mt-6 flex gap-3">
             {step > 0 && (
-              <button onClick={() => setStep(step - 1)} className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">Tilbake</button>
+              <button type="button" onClick={() => setStep(step - 1)} className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">Tilbake</button>
             )}
             <button
-              onClick={handleWizardNext}
+              type="submit"
               disabled={!currentStep.valid || loading}
               className="ml-auto rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {loading ? "Bygger nettsiden..." : isLastStep ? "Generer nettside ✨" : "Neste →"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     );
   }
 
   // ── Full mode ──
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 py-8 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl md:p-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 py-8 backdrop-blur-sm">
+      <form
+        className="mx-4 my-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl md:p-8"
+        onSubmit={(e) => { e.preventDefault(); if (isValid && !loading) handleSubmit(); }}
+      >
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-lg">🤖</div>
             <h2 className="text-lg font-bold text-gray-900">AI Nettsidebygger</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 transition hover:text-gray-600">✕</button>
+          <button type="button" onClick={onClose} className="text-gray-400 transition hover:text-gray-600">✕</button>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -575,14 +581,14 @@ export default function SiteBuilder({
 
         <div className="mt-6 flex justify-end">
           <button
-            onClick={handleSubmit}
+            type="submit"
             disabled={!isValid || loading}
             className="rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? "Bygger nettsiden..." : "Oppdater nettside ✨"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

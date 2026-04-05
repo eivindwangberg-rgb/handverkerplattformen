@@ -106,6 +106,7 @@ export default function Home() {
               </span>
               <nav className="flex items-center gap-4">
                 <a href="#tjenester" className="hidden text-sm font-medium text-white/80 transition hover:text-white md:block">Tjenester</a>
+                {data.ekstraBilder.length > 0 && <a href="#arbeid" className="hidden text-sm font-medium text-white/80 transition hover:text-white md:block">Vårt arbeid</a>}
                 <a href="#om" className="hidden text-sm font-medium text-white/80 transition hover:text-white md:block">Om oss</a>
                 <a href="#kontakt" className="hidden text-sm font-medium text-white/80 transition hover:text-white md:block">Kontakt</a>
                 <a
@@ -185,6 +186,42 @@ export default function Home() {
                         Ta kontakt for mer informasjon om {service.toLowerCase()}.
                       </p>
                     </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ── Skillelinje ── */}
+          {data.ekstraBilder.length > 0 && services.length > 0 && (
+            <div className="mx-auto max-w-6xl px-6 pb-8">
+              <div className={`h-1 rounded-full ${gClass("r")} opacity-20`} style={gStyle("r")} />
+            </div>
+          )}
+
+          {/* ── Vårt arbeid ── */}
+          {data.ekstraBilder.length > 0 && (
+            <section id="arbeid" className="py-16 md:py-24">
+              <div className="mx-auto max-w-6xl px-6">
+                <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">
+                  Vårt arbeid
+                </h2>
+                <p className="mx-auto mt-3 max-w-2xl text-center text-gray-500">
+                  Se eksempler fra prosjekter vi har gjennomført.
+                </p>
+                <div className={`mt-12 grid gap-4 ${
+                  data.ekstraBilder.length === 1 ? "grid-cols-1 max-w-lg mx-auto" :
+                  data.ekstraBilder.length === 2 ? "grid-cols-2" :
+                  "grid-cols-2 md:grid-cols-3"
+                }`}>
+                  {data.ekstraBilder.map((src, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={src}
+                      alt={`Prosjekt ${i + 1}`}
+                      className="h-56 w-full rounded-xl object-cover shadow-sm transition hover:shadow-md md:h-64"
+                    />
                   ))}
                 </div>
               </div>
