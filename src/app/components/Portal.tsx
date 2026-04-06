@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ── Meldingstyper ──
 
@@ -81,7 +81,14 @@ function typeIcon(type: Message["type"]): string {
 
 // ── Komponent ──
 
-type PortalView = "menu" | "messages" | "message-detail";
+interface InternalChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
+
+type PortalView = "menu" | "messages" | "message-detail" | "agent-chat";
 
 interface PortalProps {
   isOpen: boolean;
@@ -96,6 +103,16 @@ interface PortalProps {
 export default function Portal({ isOpen, onClose, onEditSite, gradientClass, gradientStyle, messages, onMessagesChange }: PortalProps) {
   const [activeView, setActiveView] = useState<PortalView>("menu");
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [chatMessages, setChatMessages] = useState<InternalChatMessage[]>([
+    {
+      id: "welcome",
+      role: "assistant",
+      content: "Hei! Jeg er din rådgiver. Hvordan kan jeg hjelpe deg med nettsiden eller bedriften din?",
+      timestamp: new Date(),
+    },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = messages.filter((m) => !m.readAt).length;
 
@@ -136,6 +153,35 @@ export default function Portal({ isOpen, onClose, onEditSite, gradientClass, gra
         )
       );
     }
+  }
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  function handleChatSend() {
+    const text = chatInput.trim();
+    if (!text) return;
+
+    const userMsg: InternalChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: text,
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+
+    // Placeholder — kobles til intern agent senere
+    setTimeout(() => {
+      const botMsg: InternalChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Takk for meldingen! Agenten er ikke koblet til ennå, men vi jobber med det.",
+        timestamp: new Date(),
+      };
+      setChatMessages((prev) => [...prev, botMsg]);
+    }, 800);
   }
 
   function handleEditSite() {
@@ -182,6 +228,8 @@ export default function Portal({ isOpen, onClose, onEditSite, gradientClass, gra
             {activeView === "menu" && "Min side"}
             {activeView === "messages" && "Meldinger"}
             {activeView === "message-detail" && selectedMessage?.subject}
+            {activeView === "agent-chat" && "Chat med rådgiver"}
+
           </h2>
           {/* Plassholdar for jevn layout */}
           <div className="w-8" />
@@ -226,13 +274,25 @@ export default function Portal({ isOpen, onClose, onEditSite, gradientClass, gra
                 </div>
               </button>
 
+              <button
+                onClick={() => setActiveView("agent-chat")}
+                className="flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left shadow-sm transition hover:shadow-md"
+              >
+                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${gradientClass}`} style={gradientStyle}>
+                  <span className="text-sm font-bold text-white">🤖</span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">Chat med rådgiver</h3>
+                  <p className="text-xs leading-snug text-gray-500">Få hjelp og veiledning fra vår AI-rådgiver.</p>
+                </div>
+              </button>
+
               {/* Kommende funksjoner */}
               <div className="pt-2">
                 <p className="mb-3 px-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
                   Kommer snart
                 </p>
                 {[
-                  { icon: "🤖", label: "Chat med rådgiver", desc: "Få hjelp av en AI-rådgiver." },
                   { icon: "📊", label: "SEO-rapport", desc: "Se hvordan nettsiden presterer." },
                   { icon: "📈", label: "Statistikk", desc: "Besøkstall og innsikt." },
                 ].map((item) => (
@@ -333,6 +393,69 @@ export default function Portal({ isOpen, onClose, onEditSite, gradientClass, gra
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* ── Agent-chat ── */}
+          {activeView === "agent-chat" && (
+            <div className="flex h-full flex-col">
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <div className="flex flex-col gap-3">
+                  {chatMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
+                          msg.role === "user"
+                            ? `text-white ${gradientClass}`
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                        style={msg.role === "user" ? gradientStyle : undefined}
+                      >
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleChatSend();
+                }}
+                className="flex items-center gap-2 border-t border-gray-200 px-4 py-3"
+              >
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Skriv en melding..."
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                />
+                <button
+                  type="submit"
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition hover:opacity-90 ${gradientClass}`}
+                  style={gradientStyle}
+                  aria-label="Send melding"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 text-white"
+                  >
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                </button>
+              </form>
             </div>
           )}
         </div>

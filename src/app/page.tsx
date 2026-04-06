@@ -4,22 +4,24 @@ import { useState } from "react";
 import SiteBuilder, { SiteData, colorTemplates, FALLBACK_IMAGE } from "./components/SiteBuilder";
 import Portal, { demoMessages } from "./components/Portal";
 import PortalButton from "./components/PortalButton";
+import ChatWidget from "./components/ChatWidget";
 
 const emptyData: SiteData = {
-  bedriftsnavn: "",
-  type: "",
-  sted: "",
-  telefon: "",
-  tjenester: "",
-  beskrivelse: "",
-  fargemal: -1,
+  bedriftsnavn: "Johansen Bygg & Renovering",
+  type: "Snekker",
+  sted: "Oslo",
+  telefon: "912 34 567",
+  tjenester: "Tilbygg, Kjøkkenmontering, Baderom, Terrassbygging, Vindusbytte, Maling",
+  beskrivelse: "Vi er et familiedrevet snekkerfirma med over 15 års erfaring i Oslo-området. Vi er stolte av håndverket vårt og leverer alltid kvalitetsarbeid til avtalt tid og pris.",
+  fargemal: 0,
   customColors: ["#0c4a6e", "#0369a1"] as [string, string],
   bilde: "",
-  adresse: "",
+  adresse: "Bygata 12, 0123 Oslo",
   bildeFokus: "50% 30%",
   bildeZoom: 1,
   bildeHoyde: 400,
   ekstraBilder: [],
+  omOssBilde: "",
   logo: "",
 };
 
@@ -33,8 +35,8 @@ function parseServices(tjenester: string) {
 
 export default function Home() {
   const [data, setData] = useState<SiteData>(emptyData);
-  const [builderOpen, setBuilderOpen] = useState(true);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(true);
 
   const handleSubmit = (formData: SiteData) => {
     setData(formData);
@@ -84,7 +86,7 @@ export default function Home() {
       {!hasSubmitted && !builderOpen ? (
         <div className={`flex min-h-screen flex-col items-center justify-center ${gClass("b")} px-6 text-center text-white`} style={gStyle("b")}>
           <h1 className="text-3xl font-bold">Velkommen til Nettsidebyggeren</h1>
-          <p className="mt-4 text-white/70">Fyll ut informasjon for a generere nettsiden din.</p>
+          <p className="mt-4 text-white/70">Fyll ut informasjon for å generere nettsiden din.</p>
           <button
             onClick={() => setBuilderOpen(true)}
             className="mt-8 rounded-full bg-white px-8 py-3 text-base font-semibold text-gray-900 transition hover:bg-gray-100"
@@ -109,12 +111,18 @@ export default function Home() {
                 {data.ekstraBilder.length > 0 && <a href="#arbeid" className="hidden text-sm font-medium text-white/80 transition hover:text-white md:block">Vårt arbeid</a>}
                 <a href="#om" className="hidden text-sm font-medium text-white/80 transition hover:text-white md:block">Om oss</a>
                 <a href="#kontakt" className="hidden text-sm font-medium text-white/80 transition hover:text-white md:block">Kontakt</a>
-                <a
-                  href={safeTelefon ? `tel:+47${safeTelefon}` : "#"}
-                  className="rounded-lg bg-white px-5 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-100"
-                >
-                  {data.telefon}
-                </a>
+                {safeTelefon ? (
+                  <a
+                    href={`tel:+47${safeTelefon}`}
+                    className="rounded-lg bg-white px-5 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-100"
+                  >
+                    {data.telefon}
+                  </a>
+                ) : (
+                  <span className="rounded-lg bg-white px-5 py-2 text-sm font-semibold text-gray-900">
+                    {data.telefon}
+                  </span>
+                )}
                 <PortalButton unreadCount={unreadCount} onClick={() => setPortalOpen(true)} />
               </nav>
             </div>
@@ -150,14 +158,16 @@ export default function Home() {
                   href="#kontakt"
                   className="rounded-lg bg-white px-8 py-3 text-center text-base font-semibold text-gray-900 shadow transition hover:bg-gray-100"
                 >
-                  Fa et uforpliktende tilbud
+                  Få et uforpliktende tilbud
                 </a>
-                <a
-                  href={safeTelefon ? `tel:+47${safeTelefon}` : "#"}
-                  className="rounded-lg border-2 border-white px-8 py-3 text-center text-base font-semibold text-white transition hover:bg-white/10"
-                >
-                  Ring oss na
-                </a>
+                {safeTelefon && (
+                  <a
+                    href={`tel:+47${safeTelefon}`}
+                    className="rounded-lg border-2 border-white px-8 py-3 text-center text-base font-semibold text-white transition hover:bg-white/10"
+                  >
+                    Ring oss nå
+                  </a>
+                )}
               </div>
             </div>
           </section>
@@ -167,7 +177,7 @@ export default function Home() {
             <section id="tjenester" className="py-16 md:py-24">
               <div className="mx-auto max-w-6xl px-6">
                 <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">
-                  Vare tjenester
+                  Våre tjenester
                 </h2>
                 <p className="mx-auto mt-3 max-w-2xl text-center text-gray-500">
                   Vi tilbyr et bredt spekter av tjenester tilpasset dine behov.
@@ -175,7 +185,7 @@ export default function Home() {
                 <div className="mt-12 flex flex-wrap justify-center gap-6">
                   {services.map((service, i) => (
                     <div
-                      key={service}
+                      key={`${service}-${i}`}
                       className={`group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md w-full ${services.length === 1 ? "max-w-sm" : services.length === 2 ? "sm:w-[calc(50%-0.75rem)]" : "sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]"}`}
                     >
                       <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ${gClass("br")}`} style={gStyle("br")}>
@@ -252,7 +262,7 @@ export default function Home() {
               <div className="overflow-hidden rounded-2xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={data.ekstraBilder[0] || data.bilde || FALLBACK_IMAGE}
+                  src={data.omOssBilde || data.bilde || FALLBACK_IMAGE}
                   alt={data.bedriftsnavn}
                   className="h-72 w-full object-cover md:h-96"
                 />
@@ -268,7 +278,7 @@ export default function Home() {
                   <div>
                     <h2 className="text-3xl font-bold tracking-tight">Kontakt oss</h2>
                     <p className="mt-3 text-gray-500">
-                      Ta kontakt for et uforpliktende tilbud eller om du har sporsmal.
+                      Ta kontakt for et uforpliktende tilbud eller om du har spørsmål.
                     </p>
                     <div className="mt-8 space-y-4">
                       <div className="flex items-center gap-3">
@@ -277,9 +287,13 @@ export default function Home() {
                         </div>
                         <div>
                           <p className="text-xs text-gray-400">Telefon</p>
-                          <a href={safeTelefon ? `tel:+47${safeTelefon}` : "#"} className="font-semibold hover:underline">
-                            {data.telefon}
-                          </a>
+                          {safeTelefon ? (
+                            <a href={`tel:+47${safeTelefon}`} className="font-semibold hover:underline">
+                              {data.telefon}
+                            </a>
+                          ) : (
+                            <span className="font-semibold">{data.telefon}</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -294,7 +308,7 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                  <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); setKontaktSendt(true); }}>
+                  <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); setKontaktSendt(true); setKontaktNavn(""); setKontaktTlf(""); setKontaktMelding(""); }}>
                     <input
                       type="text"
                       placeholder="Ditt navn"
@@ -332,6 +346,13 @@ export default function Home() {
             </div>
           </section>
 
+          {/* ── Chat ── */}
+          <ChatWidget
+            bedriftsnavn={data.bedriftsnavn || "Oss"}
+            gradientClass={gClass("br")}
+            gradientStyle={gStyle("br")}
+          />
+
           {/* ── Footer ── */}
           <footer className={`${gClass("r")} py-8 text-white`} style={gStyle("r")}>
             <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
@@ -345,12 +366,16 @@ export default function Home() {
               <p className="text-xs text-white/50">
                 &copy; {new Date().getFullYear()} {data.bedriftsnavn}. Alle rettigheter reservert.
               </p>
-              <a
-                href={safeTelefon ? `tel:+47${safeTelefon}` : "#"}
-                className="text-sm font-medium text-white/80 hover:text-white"
-              >
-                {data.telefon}
-              </a>
+              {safeTelefon ? (
+                <a
+                  href={`tel:+47${safeTelefon}`}
+                  className="text-sm font-medium text-white/80 hover:text-white"
+                >
+                  {data.telefon}
+                </a>
+              ) : (
+                <span className="text-sm font-medium text-white/80">{data.telefon}</span>
+              )}
             </div>
           </footer>
         </>

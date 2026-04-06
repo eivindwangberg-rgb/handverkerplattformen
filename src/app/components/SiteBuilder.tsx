@@ -84,6 +84,7 @@ export interface SiteData {
   bildeZoom: number;
   bildeHoyde: number;
   ekstraBilder: string[];
+  omOssBilde: string;
   logo: string;
   customColors?: [string, string];
 }
@@ -121,7 +122,6 @@ export default function SiteBuilder({
   initialData: SiteData;
   mode?: "wizard" | "full";
 }) {
-  const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<SiteData>(initialData);
   const [bildePreview, setBildePreview] = useState<string>(initialData.bilde);
@@ -143,7 +143,7 @@ export default function SiteBuilder({
         extractColors(initialData.logo).then(generateLogoTemplates);
       }
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, initialData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generateLogoTemplates = (colors: string[]) => {
     const templates: ColorTemplate[] = colors.map((c, i) => ({
@@ -177,10 +177,18 @@ export default function SiteBuilder({
     generateLogoTemplates(colors);
   };
 
+  const MAX_EKSTRA_BILDER = 12;
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
   const handleEkstraBilder = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const urls = Array.from(files).map((f) => URL.createObjectURL(f));
+    const remaining = MAX_EKSTRA_BILDER - ekstraPreviews.length;
+    if (remaining <= 0) return;
+    const validFiles = Array.from(files)
+      .filter((f) => f.size <= MAX_FILE_SIZE)
+      .slice(0, remaining);
+    const urls = validFiles.map((f) => URL.createObjectURL(f));
     setEkstraPreviews((prev) => [...prev, ...urls]);
     setForm((prev) => ({ ...prev, ekstraBilder: [...prev.ekstraBilder, ...urls] }));
   };
@@ -204,12 +212,8 @@ export default function SiteBuilder({
     form.beskrivelse.trim().length > 0;
 
   const handleSubmit = () => {
-    setLoading(true);
     onSubmit(form);
-    setTimeout(() => {
-      setLoading(false);
-      onClose();
-    }, 1500);
+    onClose();
   };
 
   if (!open) return null;
@@ -358,6 +362,38 @@ export default function SiteBuilder({
     </div>
   );
 
+  const velgOmOssBilde = (index: number) => {
+    const src = ekstraPreviews[index];
+    // Legg tilbake forrige om-oss-bilde i galleriet
+    const forrige = form.omOssBilde;
+    if (forrige) {
+      setEkstraPreviews((prev) => [...prev.filter((_, i) => i !== index), forrige]);
+      setForm((prev) => ({
+        ...prev,
+        omOssBilde: src,
+        ekstraBilder: [...prev.ekstraBilder.filter((_, i) => i !== index), forrige],
+      }));
+    } else {
+      setEkstraPreviews((prev) => prev.filter((_, i) => i !== index));
+      setForm((prev) => ({
+        ...prev,
+        omOssBilde: src,
+        ekstraBilder: prev.ekstraBilder.filter((_, i) => i !== index),
+      }));
+    }
+  };
+
+  const fjernOmOssBilde = () => {
+    const src = form.omOssBilde;
+    if (!src) return;
+    setEkstraPreviews((prev) => [...prev, src]);
+    setForm((prev) => ({
+      ...prev,
+      omOssBilde: "",
+      ekstraBilder: [...prev.ekstraBilder, src],
+    }));
+  };
+
   const fieldEkstraBilder = (
     <div className="md:col-span-2">
       <label className="mb-1 block text-xs font-semibold text-gray-700">Galleri / flere bilder</label>
@@ -365,7 +401,7 @@ export default function SiteBuilder({
         {ekstraPreviews.map((src, i) => (
           <div key={i} className="group relative h-16 w-24 overflow-hidden rounded-md">
             <img src={src} alt={`Bilde ${i + 1}`} className="h-full w-full object-cover" />
-            <button onClick={() => fjernEkstraBilde(i)} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] text-white opacity-0 transition group-hover:opacity-100">✕</button>
+            <button type="button" onClick={() => fjernEkstraBilde(i)} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] text-white opacity-0 transition group-hover:opacity-100">✕</button>
           </div>
         ))}
         <label className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-300 text-gray-400 transition hover:border-sky-400 hover:text-sky-500">
@@ -373,6 +409,35 @@ export default function SiteBuilder({
           <input type="file" accept="image/*" multiple onChange={handleEkstraBilder} className="hidden" />
         </label>
       </div>
+      {(ekstraPreviews.length > 0 || form.omOssBilde) && (
+        <div className="mt-3">
+          <label className="mb-1 block text-xs font-semibold text-gray-700">Bilde for «Om oss»-seksjonen</label>
+          {form.omOssBilde ? (
+            <div className="group relative inline-block h-16 w-24 overflow-hidden rounded-md border-2 border-sky-500 ring-2 ring-sky-500/30">
+              <img src={form.omOssBilde} alt="Om oss-bilde" className="h-full w-full object-cover" />
+              <div className="absolute inset-0 flex items-center justify-center bg-sky-500/20">
+                <span className="rounded-full bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold text-white">Om oss</span>
+              </div>
+              <button type="button" onClick={fjernOmOssBilde} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] text-white opacity-0 transition group-hover:opacity-100" title="Flytt tilbake til galleri">✕</button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {ekstraPreviews.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => velgOmOssBilde(i)}
+                  className="relative h-16 w-24 overflow-hidden rounded-md border-2 border-transparent transition hover:border-sky-300"
+                  title="Bruk som «Om oss»-bilde"
+                >
+                  <img src={src} alt={`Velg bilde ${i + 1}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
+              <p className="self-center text-xs text-gray-400">Klikk for å velge</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -490,7 +555,6 @@ export default function SiteBuilder({
     { title: "Hvilke tjenester tilbyr du?", content: fieldTjenester, valid: form.tjenester.trim().length > 0 },
     { title: "Beskriv bedriften din kort", content: fieldBeskrivelse, valid: form.beskrivelse.trim().length > 0 },
     { title: "Velg hovedbilde", content: fieldBilde, valid: true },
-    { title: "Juster bildet", content: fieldBildejustering, valid: true },
     { title: "Flere bilder (valgfritt)", content: fieldEkstraBilder, valid: true },
     { title: "Velg fargetema", content: fieldFargetema, valid: true },
   ];
@@ -512,7 +576,7 @@ export default function SiteBuilder({
       <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 py-8 backdrop-blur-sm">
         <form
           className="mx-4 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl md:p-8"
-          onSubmit={(e) => { e.preventDefault(); if (currentStep.valid && !loading) handleWizardNext(); }}
+          onSubmit={(e) => { e.preventDefault(); if (currentStep.valid) handleWizardNext(); }}
         >
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -538,10 +602,10 @@ export default function SiteBuilder({
             )}
             <button
               type="submit"
-              disabled={!currentStep.valid || loading}
+              disabled={!currentStep.valid}
               className="ml-auto rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {loading ? "Bygger nettsiden..." : isLastStep ? "Generer nettside ✨" : "Neste →"}
+              {isLastStep ? "Generer nettside ✨" : "Neste →"}
             </button>
           </div>
         </form>
@@ -554,7 +618,7 @@ export default function SiteBuilder({
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 py-8 backdrop-blur-sm">
       <form
         className="mx-4 my-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl md:p-8"
-        onSubmit={(e) => { e.preventDefault(); if (isValid && !loading) handleSubmit(); }}
+        onSubmit={(e) => { e.preventDefault(); if (isValid) handleSubmit(); }}
       >
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -582,10 +646,10 @@ export default function SiteBuilder({
         <div className="mt-6 flex justify-end">
           <button
             type="submit"
-            disabled={!isValid || loading}
+            disabled={!isValid}
             className="rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {loading ? "Bygger nettsiden..." : "Oppdater nettside ✨"}
+            Oppdater nettside ✨
           </button>
         </div>
       </form>
